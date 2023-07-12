@@ -1,0 +1,201 @@
+{
+	"name":"Mackie Universal",
+	"type":"MIDI",
+	"path":"Hardware",
+	
+	"version":"1.0.0",
+	"description":"Special MIDI Module for Mackie compatible controlers",
+	"url":"",
+	"downloadURL":"",
+	
+	"hasInput":true,
+	"hasOutput":true, 
+
+	"hideDefaultCommands":true,
+
+
+
+	"parameters":
+	{
+		"type":"Container",
+		"FlashOnTouched":{"type":"Boolean"},
+		"FlashOnSolo":{"type":"Boolean"},
+		"stripIndex":{"type":"Integer", "min":0,"max":8},
+		"ActiveView":{"type":"Integer", "min":0,"max":8}
+	},
+
+	"defaults":
+	{		
+		"devices":["X-Touch", "X-Touch"],
+		"autoAdd":false
+	},
+
+	"hideDefaultParameters":
+	[
+		"autoAdd",
+		"autoFeedback"
+	],
+
+
+	"scripts":
+	[
+		"MackieUniversal.js"
+	],
+
+	"values":
+	{
+		"type":"Container",
+		
+		
+		"Strips":{
+			"type":"Container",
+			"Strip 1":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			},
+			"Strip 2":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			},
+			"Strip 3":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			},
+			"Strip 4":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			},
+			"Strip 5":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			},
+			"Strip 6":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			},
+			"Strip 7":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			},
+			"Strip 8":{
+				"type":"Container",
+				"collapsed":true,
+				"EncName": {"type":"String"},
+				"PotVal": {"type":"Float", "min":0, "max":1},
+				"PotMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
+				"FdrName": {"type":"String"},
+				"Fader":   { "type":"Float", "min":0,"max":1},
+				"Touch": {"type":"Boolean"},
+				"Meter":  { "type":"Float", "min":0,"max":1},
+				"Select": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Mute": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Solo": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Rec": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"Func": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}},
+				"View": {"type":"Enum", "options": {"off":0, "flash":1, "on":127}}
+			}
+
+		},
+		"Main":{
+			"type":"Container",
+			"mainFader":{"type":"Float","min":0,"max":1},
+			"mainTouch":{"type":"Boolean"}
+		}
+		
+	},
+	"commands":
+	{
+		
+	}
+}
