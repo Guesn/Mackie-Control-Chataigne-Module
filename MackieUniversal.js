@@ -1,18 +1,18 @@
 
 //Initialize Script variables
-var yearSecs = 31556926;//Number of seconds in a year (365.24 days)
-var monthSecs = 2629743;//Number of seconds in a (rounded) month
-var daySecs = 86400;//Number of seconds in a day
-var hourSecs = 3600;//Number of seconds in an hour
-var minuteSecs = 60;//Number of seconds in a minute
-var UTCStamp = 0;//Holds UTC TimeUTCStamp for date calculation
-var UTCOffset = 0;//Holds UTC Time UTCOffset for local synchronization
-var frameTicker = 0;//Used to count frames for clip reset
-var counter = 0;//Used for loop iteration
-var stripArray = [];//Used to construct SysEx commands for scribble strip updates
-var rate = 30;//Update rate in Hz or FPS
-//Force Script update rate to 30, as default is 50 and it is not editable when connected to a module
-script.setUpdateRate(rate);
+    var yearSecs = 31556926;//Number of seconds in a year (365.24 days)
+    var monthSecs = 2629743;//Number of seconds in a (rounded) month
+    var daySecs = 86400;//Number of seconds in a day
+    var hourSecs = 3600;//Number of seconds in an hour
+    var minuteSecs = 60;//Number of seconds in a minute
+    var UTCStamp = 0;//Holds UTC TimeUTCStamp for date calculation
+    var UTCOffset = 0;//Holds UTC Time UTCOffset for local synchronization
+    var frameTicker = 0;//Used to count frames for clip reset
+    var counter = 0;//Used for loop iteration
+    var stripArray = [];//Used to construct SysEx commands for scribble strip updates
+    var rate = 30;//Update rate in Hz or FPS
+    //Force Script update rate to 30, as default is 50 and it is not editable when connected to a module
+    script.setUpdateRate(rate);
 
 function init()
 {
@@ -287,12 +287,34 @@ function noteOnEvent(channel, pitch, velocity)
         local.parameters.stripIndex.set(pitch-23);
     }
     
+    //Is it a 'Push' button?
+    if (pitch >= 32 && pitch <= 39){
+        var index = pitch-32;
+        script.log("Encoder Push " + (index+1));
+    }
+    
+    //Is it a 'Assign' button?
+    if (pitch >= 40 && pitch <= 45){
+        if (pitch == 40) {script.log("I/O");}
+        if (pitch == 41) {script.log("Sends");}
+        if (pitch == 42) {script.log("Pan");}
+        if (pitch == 43) {script.log("Plug-ins");}
+        if (pitch == 44) {script.log("EQ");}
+        if (pitch == 45) {script.log("Dyn");}
+    }
+    
     //Is it a 'Move' button?
     if (pitch >= 46 && pitch <= 49){
         if (pitch == 46) {script.log("Bank Low");}
         if (pitch == 47) {script.log("Bank Up");}
         if (pitch == 48) {script.log("Chan Low");}
         if (pitch == 49) {script.log("Chan Up");}
+    }
+    
+    //Is it a 'Bonus' button?
+    if (pitch >= 50 && pitch <= 51){
+        if (pitch == 50) {script.log("Flip");}
+        if (pitch == 51) {script.log("Edit");}
     }
     
     //Is it a 'Function' button ?
@@ -310,6 +332,28 @@ function noteOnEvent(channel, pitch, velocity)
     if (pitch >= 62 && pitch <= 69){
         // Set new view value
         local.parameters.activeView.set(pitch-61);
+    }
+
+    //Is it a 'Other' button?
+    if (pitch >= 70 && pitch <= 90){
+        if (pitch == 70) {script.log("Shift");}
+        if (pitch == 71) {script.log("Option");}
+        if (pitch == 72) {script.log("Control");}
+        if (pitch == 73) {script.log("Alt");}
+        if (pitch == 74) {script.log("On");}
+        if (pitch == 75) {script.log("Rec/Ready");}
+        if (pitch == 76) {script.log("Undo");}
+        if (pitch == 78) {script.log("Touch");}
+        if (pitch == 79) {script.log("Redo");}
+        if (pitch == 80) {script.log("Cancel");}
+        if (pitch == 81) {script.log("Enter");}
+        if (pitch == 84) {script.log("FrameLow");}
+        if (pitch == 85) {script.log("FrameUp");}
+        if (pitch == 86) {script.log("Loop");}
+        if (pitch == 87) {script.log("PI");}
+        if (pitch == 88) {script.log("PO");}
+        if (pitch == 89) {script.log("Home");}
+        if (pitch == 90) {script.log("End");}
     }
 
     //Is it a 'Transport' button?
