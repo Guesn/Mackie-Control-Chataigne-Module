@@ -23,12 +23,12 @@ function init()
         //Pulse VU Meters at current value
         local.sendChannelPressure(counter+1,local.values.strips.getChild('Strip '+(counter+1)).meter.get()*14+(16*(counter)));
         //Init POT LEDs
-        if(((local.values.strips.getChild('Strip '+(counter+1)).potMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+(counter+1)).potMode.get()-1)/16==7)){     
-            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(counter+1)).potVal.get()*5)+(local.values.strips.getChild('Strip '+(counter+1)).potMode.get()));
+        if(((local.values.strips.getChild('Strip '+(counter+1)).rotaryMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+(counter+1)).rotaryMode.get()-1)/16==7)){     
+            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(counter+1)).rotaryValue.get()*5)+(local.values.strips.getChild('Strip '+(counter+1)).rotaryMode.get()));
         }else{
-            local.sendCC(0,0x30+counter,(local.values.strips.getChild('Strip '+(counter+1)).potVal.get()*11)+(local.values.strips.getChild('Strip '+(counter+1)).potMode.get()));
+            local.sendCC(0,0x30+counter,(local.values.strips.getChild('Strip '+(counter+1)).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+(counter+1)).rotaryMode.get()));
         }
-       // local.sendCC(0,0x30+(counter), (local.values.strips.getChild('Strip '+(counter+1)).potVal.get()*12)+local.values.strips.getChild('Strip '+(counter+1)).potMode.getData());
+       // local.sendCC(0,0x30+(counter), (local.values.strips.getChild('Strip '+(counter+1)).rotaryValue.get()*12)+local.values.strips.getChild('Strip '+(counter+1)).rotaryMode.getData());
         //Init Select LEDs
         local.sendNoteOn(1,counter+22,local.values.strips.getChild('Strip '+(counter+1)).select.get());
          //Calculate Top Scribble Strip Array
@@ -126,6 +126,10 @@ function moduleParameterChanged(param)
 {
     if(param.isParameter())
     {
+        //Did the connected state change?
+        if(param.name=="devices"){
+            init();
+        }
         //Did we change the selected strip?
         if(param.name=="stripIndex"){
             var i;
@@ -171,13 +175,13 @@ function moduleValueChanged(value)
                 if(value.name=="select"){
                     local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))+23,value.get());
                 }else{
-                    if(value.name=="potVal"||value.name=="potMode"){
+                    if(value.name=="rotaryValue"||value.name=="rotaryMode"){
                         index = parseInt(value.getParent().name.substring(5,6))-1;
-                        if(((local.values.strips.getChild('Strip '+(index+1)).potMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+(index+1)).potMode.get()-1)/16==7)){
+                        if(((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==7)){
                             
-                            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).potVal.get()*5)+(local.values.strips.getChild('Strip '+(index+1)).potMode.get()));
+                            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*5)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()));
                         }else{
-                            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).potVal.get()*11)+(local.values.strips.getChild('Strip '+(index+1)).potMode.get()));
+                            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()));
                         }
                         
                     }else{
@@ -363,11 +367,11 @@ function ccEvent(channel, number, value)
         var index = number-16;
         //If SpinLeft
         if(value>64){
-            //Subtract corrected value from potValue
-            local.values.strips.getChild('Strip '+(index+1)).potVal.set(local.values.strips.getChild('Strip '+(index+1)).potVal.get()-((value-64)/256));
+            //Subtract corrected value from rotaryValueue
+            local.values.strips.getChild('Strip '+(index+1)).rotaryValue.set(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()-((value-64)/256));
         }else{
-            //Add value to potValue
-            local.values.strips.getChild('Strip '+(index+1)).potVal.set(local.values.strips.getChild('Strip '+(index+1)).potVal.get()+(value/256));
+            //Add value to rotaryValueue
+            local.values.strips.getChild('Strip '+(index+1)).rotaryValue.set(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()+(value/256));
         }
     }
 }
