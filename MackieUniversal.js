@@ -32,7 +32,7 @@ function init()
         //Init Select LEDs
         local.sendNoteOn(1,counter+22,local.values.strips.getChild('Strip '+(counter+1)).select.get());
          //Calculate Top Scribble Strip Array
-        stripArray[counter]=local.values.strips.getChild('Strip '+(counter+1)).encName.get();
+        stripArray[counter]=local.values.strips.getChild('Strip '+(counter+1)).encoderName.get();
         if ((stripArray[counter].length)>7){
             stripArray[counter]=stripArray[counter].substring(0,7);
         }else{
@@ -44,7 +44,7 @@ function init()
     //Synchronize Arrays 8-15
     for(counter=8;counter<16;counter++){
        //Calculate Bottom Sysex
-        stripArray[counter]=local.values.strips.getChild('Strip '+(counter-7)).fdrName.get();
+        stripArray[counter]=local.values.strips.getChild('Strip '+(counter-7)).faderName.get();
         if ((stripArray[counter].length)>7){
             stripArray[counter]=stripArray[counter].substring(0,7);
         }else{
@@ -181,7 +181,7 @@ function moduleValueChanged(value)
                         }
                         
                     }else{
-                        if(value.name=="encName"){
+                        if(value.name=="encoderName"){
                             // Update display with new encoder name
                             var index = parseInt(value.getParent().name.substring(1,2))-1;
                             var newLabel = value.get();
@@ -197,7 +197,7 @@ function moduleValueChanged(value)
                             }
                                 
                         }else{
-                            if(value.name=="fdrName"){
+                            if(value.name=="faderName"){
                                 var index = parseInt(value.getParent().name.substring(1,2))-1;
                                 var newLabel = value.get();
                                 var short = 7-newLabel.length;
