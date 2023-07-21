@@ -19,7 +19,7 @@ function init()
    //Synchronize Arrays 1-7
     for(counter=0;counter<8;counter++){
         //Init Motor Fader Positions
-        local.sendPitchWheel(counter+1,local.values.strips.getChild('Strip '+(counter+1)).fader.get()*16383);
+        local.sendPitchWheel(counter+1,local.values.strips.getChild('Strip '+(counter+1)).faderValue.get()*16383);
         //Pulse VU Meters at current value
         local.sendChannelPressure(counter+1,local.values.strips.getChild('Strip '+(counter+1)).meter.get()*14+(16*(counter)));
         //Init POT LEDs
@@ -77,7 +77,7 @@ function init()
 //I think only file path and update rate can even trigger this now
 function scriptParameterChanged(param)
 {
-    
+
 }
 
 function update(deltaTime)
@@ -165,7 +165,7 @@ function moduleValueChanged(value)
 {
     if(value.isParameter())
     {
-        if(value.name=="fader"){
+        if(value.name=="faderValue"){
             local.sendPitchWheel(parseInt(value.getParent().name.substring(5,6)),value.get()*16383);
         }else{
             if(value.name=="meter"){
@@ -199,7 +199,7 @@ function moduleValueChanged(value)
                             }else{
                                 local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7),newLabel.substring(0,7));
                             }
-                                
+                            init();
                         }else{
                             if(value.name=="faderName"){
                                 var index = parseInt(value.getParent().name.substring(1,2))-1;
@@ -214,6 +214,7 @@ function moduleValueChanged(value)
                                 }else{
                                     local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7)+56,newLabel.substring(0,7));
                                 }
+                                init();
                             }else{
                                 if(value.name=="solo"){
                                     local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))+7,value.get());
@@ -429,7 +430,7 @@ function pitchWheelEvent(channel,value){
     //It's a strip fader
     else{
         //Update strip module with new value
-        local.values.strips.getChild('Strip '+channel).fader.set(value/16383);
+        local.values.strips.getChild('Strip '+channel).faderValue.set(value/16383);
     }
 }
 
