@@ -1,5 +1,6 @@
-
-//Initialize Script variables
+    //Initialize Script variables
+    var rate = 30;//Update rate in Hz or FPS
+    script.setUpdateRate(rate);
     var yearSecs = 31556926;//Number of seconds in a year (365.24 days)
     var monthSecs = 2629743;//Number of seconds in a (rounded) month
     var daySecs = 86400;//Number of seconds in a day
@@ -8,15 +9,32 @@
     var UTCStamp = 0;//Holds UTC TimeUTCStamp for date calculation
     var UTCOffset = 0;//Holds UTC Time UTCOffset for local synchronization
     var frameTicker = 0;//Used to count frames for clip reset
+    var deviceTicker = 0;//Used to init device with delay
     var counter = 0;//Used for loop iteration
     var stripArray = [];//Used to construct SysEx commands for scribble strip updates
-    var rate = 30;//Update rate in Hz or FPS
-    //Force Script update rate to 30, as default is 50 and it is not editable when connected to a module
-    script.setUpdateRate(rate);
+    var olddevice;
+    var assignArray = [];
+        assignArray[0] = "track";
+        assignArray[1] = "send";
+        assignArray[2] = "pan";
+        assignArray[3] = "plugin";
+        assignArray[4] = "eq";
+        assignArray[5] = "instrument";
+    var viewsArray = [];
+        viewsArray[0] = "midiTracks";
+        viewsArray[1] = "inputs";
+        viewsArray[2] = "audioTracks";
+        viewsArray[3] = "audioInst";
+        viewsArray[4] = "aux";
+        viewsArray[5] = "buses";
+        viewsArray[6] = "outputs";
+        viewsArray[7] = "user";
 
 function init()
 {
-   //Synchronize Arrays 1-7
+    script.log("Script Init");
+
+    //Synchronize Arrays 1-7
     for(counter=0;counter<8;counter++){
         //Init Motor Fader Positions
         local.sendPitchWheel(counter+1,local.values.strips.getChild('Strip '+(counter+1)).faderValue.get()*16383);
@@ -28,9 +46,14 @@ function init()
         }else{
             local.sendCC(0,0x30+counter,(local.values.strips.getChild('Strip '+(counter+1)).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+(counter+1)).rotaryMode.get()));
         }
-       // local.sendCC(0,0x30+(counter), (local.values.strips.getChild('Strip '+(counter+1)).rotaryValue.get()*12)+local.values.strips.getChild('Strip '+(counter+1)).rotaryMode.getData());
-        //Init Select LEDs
-        local.sendNoteOn(1,counter+22,local.values.strips.getChild('Strip '+(counter+1)).select.get());
+        //Init Mute
+        local.sendNoteOn(1,counter+16,local.values.strips.getChild('Strip '+(counter+1)).mute.get());
+        //Init Solo
+        local.sendNoteOn(1,counter+8,local.values.strips.getChild('Strip '+(counter+1)).solo.get());
+        //Init Rec
+        local.sendNoteOn(1,counter+0,local.values.strips.getChild('Strip '+(counter+1)).rec.get());
+        //Init Select
+        local.sendNoteOn(1,counter+24,local.values.strips.getChild('Strip '+(counter+1)).select.get());
          //Calculate Top Scribble Strip Array
         stripArray[counter]=local.values.strips.getChild('Strip '+(counter+1)).encoderName.get();
         if ((stripArray[counter].length)>7){
@@ -41,6 +64,7 @@ function init()
             }
         } 
     }
+
     //Synchronize Arrays 8-15
     for(counter=8;counter<16;counter++){
        //Calculate Bottom Sysex
@@ -53,46 +77,43 @@ function init()
             }
         } 
     }
+
     //Send Assembled String Array to scribble strips
     local.sendSysex(0x00,0x00,0x66,0x14,0x12,0x00,stripArray);
 
     //Calculate Clock Values
-    UTCOffset = (yearSecs*1970) + (hourSecs*-1)+(minuteSecs*-21) - 39;
+    UTCOffset = (yearSecs*1970) + (hourSecs*-2)+(minuteSecs*5) - 22;
     UTCStamp = util.getTimestamp();
+    script.log(util.getTimestamp());
     hours = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs));
     //Output Hours Digits
-    local.sendCC(1, 71, 48+Math.round(Math.floor(hours%10)));
-    local.sendCC(1, 72, 48+Math.round(Math.floor(hours/10)));
+    local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
+    local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
     minutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
     //Output Minutes Digits
-    local.sendCC(1, 69, 48+Math.round(Math.floor(minutes%10)));
-    local.sendCC(1, 70, 48+Math.round(Math.floor(minutes/10)));
+    local.sendCC(1, 69, 48+Math.floor(Math.floor(minutes%10)));
+    local.sendCC(1, 70, 48+Math.floor(Math.floor(minutes/10)));
     seconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
     //Output Seconds Digits
-    local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
-    local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
-}
-
-//Some script parameter has changed
-//I think only file path and update rate can even trigger this now
-function scriptParameterChanged(param)
-{
+    local.sendCC(1, 67, 48+Math.floor(Math.floor(seconds%10)));
+    local.sendCC(1, 68, 48+Math.floor(Math.floor(seconds/10)));
 
 }
 
 function update(deltaTime)
 {
+
     //Get current UTC timestamp
     UTCStamp = util.getTimestamp();
     //Unused calculations for years and days based on UTC stamp
     //var years = Math.round(Math.floor((UTCStamp+UTCOffset)/yearSecs));
     //var days = Math.round(Math.floor(((UTCStamp+UTCOffset)%yearSecs)/daySecs));
-   
+
     //Is calculated 'hours' value different from the displayed one?
-    if(hours!=Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))){
-        hours = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs));
-        local.sendCC(1, 71, 48+Math.round(Math.floor(hours%10)));
-        local.sendCC(1, 72, 48+Math.round(Math.floor(hours/10)));
+    if(hours!=Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))){
+        hours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs));
+        local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
+        local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
     }
     //Is calculated 'minutes' value different form the displayed one?
     if(minutes!=Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)/minuteSecs))){
@@ -107,13 +128,26 @@ function update(deltaTime)
         local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
         local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
     }
+
+    
+
+    // Check device change
+    if(olddevice != local.parameters.devices.get()){
+        deviceTicker++;
+        if (deviceTicker==20){
+            init();
+            olddevice = local.parameters.devices.get();
+            deviceTicker = 0;
+        }
+    }
+
     //Advance our frame counter
     frameTicker++;
-    //Have we reached our tick threshold?
+    
+    //Clear VU Meter Clip LED
     if (frameTicker>rate*1.5){
         frameTicker = 0;
         var i;
-        //Clear VU Meter 'Clip' LEDs once every 45 updates
         for(i=0;i<8;i++){
             local.sendChannelPressure(1,15+(16*i));
         }
@@ -126,11 +160,19 @@ function moduleParameterChanged(param)
 {
     if(param.isParameter())
     {
-        //Did the connected state change?
-        if(param.name=="devices"){
-            init();
+        
+        // Did we change the 'FlashOnSolo' mode ?
+        if(param.name=="flashOnSolo"){
+            var i;
+            for(i=0;i<8;i++){
+                if(local.values.strips.getChild('Strip '+(i+1)).solo.get()==1){local.values.strips.getChild('Strip '+(i+1)).solo.set("on");
+                }else{
+                if(local.values.strips.getChild('Strip '+(i+1)).solo.get()==127){local.values.strips.getChild('Strip '+(i+1)).solo.set("flash");}
+                }
+            }
         }
-        //Did we change the selected strip?
+
+        //Did we change the selected strip ?
         if(param.name=="stripIndex"){
             var i;
             for(i=0;i<8;i++){
@@ -143,20 +185,36 @@ function moduleParameterChanged(param)
                 }
             }
         }
-        //Did we change the activeView ?
-        if(param.name=="activeView"){
+
+        //Did we change the encoders assign ?
+        if(param.name=="encodersAssign"){
             var i;
-            for(i=0;i<8;i++){
-                if((param.get()==0)||(i+1!=param.get())){
-                    //select[i].set("Off");
-                    local.values.strips.getChild('Strip '+(i+1)).view.set("off");
-                }else{
-                    // select[i].set("Solid");
-                    local.values.strips.getChild('Strip '+(i+1)).view.set("on");
+            for(i=0;i<6;i++){
+                if(param.get()!=i){
+                    local.values.encoder_Assign.getChild(assignArray[i]).set(0);
+                    local.sendNoteOn(1,i+40,0);
+                }
+                if(param.get()==i){
+                    local.values.encoder_Assign.getChild(assignArray[i]).set(1);
+                    local.sendNoteOn(1,i+40,127);
                 }
             }
         }
-        
+
+        //Did we change the Views ?
+        if(param.name=="activeView"){
+            var i;
+            for(i=0;i<8;i++){
+                if(param.get()!=i){
+                    local.values.views.getChild(viewsArray[i]).set(0);
+                    local.sendNoteOn(1,i+62,0);
+                }
+                if(param.get()==i){
+                    local.values.views.getChild(viewsArray[i]).set(1);
+                    local.sendNoteOn(1,i+62,127);
+                }
+            }
+        }
     }
 }
 
@@ -170,7 +228,6 @@ function moduleValueChanged(value)
         }else{
             if(value.name=="meter"){
                 local.sendChannelPressure(1,(value.get()*14)+((parseInt(value.getParent().name.substring(5,6))-1)*16));
-                //local.values.strips.getChild('Strip '+counter).meter.get()*14+(16*(counter-1)
             }else{
                 if(value.name=="select"){
                     local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))+23,value.get());
@@ -183,7 +240,6 @@ function moduleValueChanged(value)
                         }else{
                             local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()));
                         }
-                        
                     }else{
                         if(value.name=="encoderName"){
                             // Update display with new encoder name
@@ -224,10 +280,6 @@ function moduleValueChanged(value)
                                     }else{
                                         if(value.name=="rec"){
                                             local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))-1,value.get());
-                                        }else{
-                                            if(value.name=="func"){
-                                                local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))+53,value.get());
-                                            }
                                         }
                                     }
                                 }
@@ -237,9 +289,6 @@ function moduleValueChanged(value)
                 }
             }
         }
-    }else 
-    {
-        //script.log("Module value triggered : "+value.name);   
     }
 }
 
@@ -263,7 +312,6 @@ function noteOnEvent(channel, pitch, velocity)
         //Change solo strip state
         var index = pitch-8;
         if (local.values.strips.getChild('Strip '+(index+1)).solo.get()==0){
-            script.log(local.parameters.flashOnSolo.get());
             if (local.parameters.flashOnSolo.get()){local.values.strips.getChild('Strip '+(index+1)).solo.set("flash");}
             else {local.values.strips.getChild('Strip '+(index+1)).solo.set("on");}
         }else{
@@ -291,87 +339,96 @@ function noteOnEvent(channel, pitch, velocity)
     //Is it a 'Push' button?
     if (pitch >= 32 && pitch <= 39){
         var index = pitch-32;
-        script.log("Encoder Push " + (index+1));
+        if(velocity==127) {local.values.strips.getChild('Strip '+(index+1)).push.set(1);}
     }
     
-    //Is it a 'Assign' button?
+    //Is it a 'Encoder assign' button?
     if (pitch >= 40 && pitch <= 45){
-        if (pitch == 40) {script.log("I/O");}
-        if (pitch == 41) {script.log("Sends");}
-        if (pitch == 42) {script.log("Pan");}
-        if (pitch == 43) {script.log("Plug-ins");}
-        if (pitch == 44) {script.log("EQ");}
-        if (pitch == 45) {script.log("Dyn");}
+        local.parameters.encodersAssign.setData(pitch-40);
     }
     
     //Is it a 'Move' button?
     if (pitch >= 46 && pitch <= 49){
-        if (pitch == 46) {script.log("Bank Low");}
-        if (pitch == 47) {script.log("Bank Up");}
-        if (pitch == 48) {script.log("Chan Low");}
-        if (pitch == 49) {script.log("Chan Up");}
+        if (pitch == 46) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()-1);}
+        if (pitch == 47) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()+1);}
+        if (pitch == 48) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()-1);}
+        if (pitch == 49) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()+1);}
     }
     
-    //Is it a 'Bonus' button?
-    if (pitch >= 50 && pitch <= 51){
-        if (pitch == 50) {script.log("Flip");}
-        if (pitch == 51) {script.log("Edit");}
+    //Is it a 'Visual' button?
+    if (pitch >= 50 && pitch <= 53){
+        if (pitch == 50) {if(velocity==127){script.log("Flip");local.values.main.flip.set(1);}}
+        if (pitch == 51) {if(velocity==127){script.log("Global View");local.values.views.globalView.set(1);}}
+        if (pitch == 52) {if(velocity==127){script.log("Name/Value");local.values.display.name_Value.set(1);}}
+        if (pitch == 53) {if(velocity==127){script.log("SMPTE/Beats");local.values.display.SMPTE_Beats.set(1);}}
     }
     
     //Is it a 'Function' button ?
     if (pitch >= 54 && pitch <= 61){
-        // Change function strip state
         var index = pitch-54;
-        if (local.values.strips.getChild('Strip '+(index+1)).func.get()==0){
-            local.values.strips.getChild('Strip '+(index+1)).func.set("on");
-        }else{
-            local.values.strips.getChild('Strip '+(index+1)).func.set("off");
-        }
+        if (velocity==127){script.log("Function"+ (index+1)); local.values.functionnal.getChild("f"+(index+1)).set(1);}
     }
     
     //Is it a 'View' button ?
     if (pitch >= 62 && pitch <= 69){
         // Set new view value
-        local.parameters.activeView.set(pitch-61);
+        local.parameters.activeView.setData(pitch-62);
     }
 
-    //Is it a 'Other' button?
-    if (pitch >= 70 && pitch <= 90){
-        if (pitch == 70) {script.log("Shift");}
-        if (pitch == 71) {script.log("Option");}
-        if (pitch == 72) {script.log("Control");}
-        if (pitch == 73) {script.log("Alt");}
-        if (pitch == 74) {script.log("On");}
-        if (pitch == 75) {script.log("Rec/Ready");}
-        if (pitch == 76) {script.log("Undo");}
-        if (pitch == 78) {script.log("Touch");}
-        if (pitch == 79) {script.log("Redo");}
-        if (pitch == 80) {script.log("Cancel");}
-        if (pitch == 81) {script.log("Enter");}
-        if (pitch == 84) {script.log("FrameLow");}
-        if (pitch == 85) {script.log("FrameUp");}
-        if (pitch == 86) {script.log("Loop");}
-        if (pitch == 87) {script.log("PI");}
-        if (pitch == 88) {script.log("PO");}
-        if (pitch == 89) {script.log("Home");}
-        if (pitch == 90) {script.log("End");}
+    //Is it a 'Modify' button ?
+    if (pitch >= 70 && pitch <= 73){
+        if (pitch == 70) {if(velocity==127){script.log("Shift");local.values.modify.shift.set(1);}}
+        if (pitch == 71) {if(velocity==127){script.log("Option");local.values.modify.option.set(1);}}
+        if (pitch == 72) {if(velocity==127){script.log("Control");local.values.modify.control.set(1);}}
+        if (pitch == 73) {if(velocity==127){script.log("Alt");local.values.modify.alt.set(1);}}
+    }
+
+    //Is it an 'Automation' button ?
+    if (pitch >= 74 && pitch <= 79){
+        if (pitch == 74) {if(velocity==127){script.log("Read/Off");local.values.automation.readOff.set(1);}}
+        if (pitch == 75) {if(velocity==127){script.log("Write");local.values.automation.write.set(1);}}
+        if (pitch == 76) {if(velocity==127){script.log("Trim");local.values.automation.trim.set(1);}}
+        if (pitch == 77) {if(velocity==127){script.log("Touch");local.values.automation.touch.set(1);}}
+        if (pitch == 78) {if(velocity==127){script.log("Latch");local.values.automation.latch.set(1);}}
+        if (pitch == 79) {if(velocity==127){script.log("Group");local.values.automation.group.set(1);}}
+    }
+
+    //Is it an 'Utility' button ?
+    if (pitch >= 80 && pitch <= 83){
+        if (pitch == 80) {if(velocity==127){script.log("Save");local.values.utility.save.set(1);}}
+        if (pitch == 81) {if(velocity==127){script.log("Undo");local.values.utility.undo.set(1);}}
+        if (pitch == 82) {if(velocity==127){script.log("Cancel");local.values.utility.cancel.set(1);}}
+        if (pitch == 83) {if(velocity==127){script.log("Enter");local.values.utility.enter.set(1);}}
     }
 
     //Is it a 'Transport' button?
-    if (pitch >= 91 && pitch <= 95){
-        if (pitch == 91) {script.log("Rewind");}
-        if (pitch == 92) {script.log("Fast Forward");}
-        if (pitch == 93) {script.log("Stop");}
-        if (pitch == 94) {script.log("Play");}
-        if (pitch == 95) {script.log("Rec");}
+    if (pitch >= 84 && pitch <= 95){
+        if (pitch == 84) {if(velocity==127){script.log("Marker");local.values.transport.marker.set(1);}}
+        if (pitch == 85) {if(velocity==127){script.log("Nudge");local.values.transport.nudge.set(1);}}
+        if (pitch == 86) {if(velocity==127){script.log("Cycle");local.values.transport.cycle.set(1);}}
+        if (pitch == 87) {if(velocity==127){script.log("Drop");local.values.transport.drop.set(1);}}
+        if (pitch == 88) {if(velocity==127){script.log("Replace");local.values.transport.replace.set(1);}}
+        if (pitch == 89) {if(velocity==127){script.log("Click");local.values.transport.click.set(1);}}
+        if (pitch == 90) {if(velocity==127){script.log("Solo");local.values.transport.solo.set(1);}}
+        if (pitch == 91) {if(velocity==127){script.log("Rewind");local.values.transport.rewind.set(1);}}
+        if (pitch == 92) {if(velocity==127){script.log("Fast Forward");local.values.transport.forward.set(1);}}
+        if (pitch == 93) {if(velocity==127){script.log("Stop");local.values.transport.stop.set(1);}}
+        if (pitch == 94) {if(velocity==127){script.log("Play");local.values.transport.play.set(1);}}
+        if (pitch == 95) {if(velocity==127){script.log("RecSet");local.values.transport.recSet.set(1);}}
     }
 
     //Is it a 'Arrow' button?
-    if (pitch >= 94 && pitch <= 99){
-        if (pitch == 96) {script.log("Up");}
-        if (pitch == 97) {script.log("Down");}
-        if (pitch == 98) {script.log("Left");}
-        if (pitch == 99) {script.log("Right");}
+    if (pitch >= 96 && pitch <= 99){
+        if (pitch == 96) {if(velocity==127){script.log("Up");local.values.misc.up.set(1);}}
+        if (pitch == 97) {if(velocity==127){script.log("Down");local.values.misc.down.set(1);}}
+        if (pitch == 98) {if(velocity==127){script.log("Left");local.values.misc.left.set(1);}}
+        if (pitch == 99) {if(velocity==127){script.log("Right");local.values.misc.right.set(1);}}
+    }
+
+    //Is it a 'Misc' button?
+    if (pitch >= 100 && pitch <= 101){
+        if (pitch == 100) {if(velocity==127){script.log("Zoom");local.values.misc.zoom.set(1);}}
+        if (pitch == 101) {if(velocity==127){script.log("Scrub");local.values.misc.scrub.set(1);}}
     }
 
     //Is it a fader touch?
@@ -380,8 +437,6 @@ function noteOnEvent(channel, pitch, velocity)
         local.values.strips.getChild('Strip '+(index+1)).touch.set(true);
         local.values.strips.getChild('Strip '+(index+1)).select.set("flash");
     }
-
-
 
 }
 
@@ -401,7 +456,61 @@ function noteOffEvent(channel, pitch, velocity)
             local.values.strips.getChild('Strip '+(index+1)).select.set("off");
         }
     }
-    //script.log("Note off received "+channel+", "+pitch+", "+velocity);
+
+    //Is it a 'Push' button?
+    if (pitch >= 32 && pitch <= 39){
+        var index = pitch-32;
+        if(velocity==0) {local.values.strips.getChild('Strip '+(index+1)).push.set(0);}
+    }
+
+    //Is it a 'Visual' button?
+    if (pitch >= 50 && pitch <= 53){
+        if (pitch == 50) {if(velocity==0){local.values.main.flip.set(0);}}
+        if (pitch == 51) {if(velocity==0){local.values.views.globalView.set(0);}}
+        if (pitch == 52) {if(velocity==0){local.values.display.name_Value.set(0);}}
+        if (pitch == 53) {if(velocity==0){local.values.display.SMPTE_Beats.set(0);}}
+    }
+    //Is it a 'Function' button ?
+    if (pitch >= 54 && pitch <= 61){
+        var index = pitch-54;
+        if (velocity==0){script.log("Function"+ (index+1)); local.values.functionnal.getChild("f"+(index+1)).set(0);}
+    }
+
+    //Is it a button ?
+    if (pitch >= 70 && pitch <= 101){
+        if (pitch == 70) {if(velocity==0){local.values.modify.shift.set(0);}}
+        if (pitch == 71) {if(velocity==0){local.values.modify.option.set(0);}}
+        if (pitch == 72) {if(velocity==0){local.values.modify.control.set(0);}}
+        if (pitch == 73) {if(velocity==0){local.values.modify.alt.set(0);}}
+        if (pitch == 74) {if(velocity==0){local.values.automation.readOff.set(0);}}
+        if (pitch == 75) {if(velocity==0){local.values.automation.write.set(0);}}
+        if (pitch == 76) {if(velocity==0){local.values.automation.trim.set(0);}}
+        if (pitch == 77) {if(velocity==0){local.values.automation.touch.set(0);}}
+        if (pitch == 78) {if(velocity==0){local.values.automation.latch.set(0);}}
+        if (pitch == 79) {if(velocity==0){local.values.automation.group.set(0);}}
+        if (pitch == 80) {if(velocity==0){local.values.utility.save.set(0);}}
+        if (pitch == 81) {if(velocity==0){local.values.utility.undo.set(0);}}
+        if (pitch == 82) {if(velocity==0){local.values.utility.cancel.set(0);}}
+        if (pitch == 83) {if(velocity==0){local.values.utility.enter.set(0);}}
+        if (pitch == 84) {if(velocity==0){local.values.transport.marker.set(0);}}
+        if (pitch == 85) {if(velocity==0){local.values.transport.nudge.set(0);}}
+        if (pitch == 86) {if(velocity==0){local.values.transport.cycle.set(0);}}
+        if (pitch == 87) {if(velocity==0){local.values.transport.drop.set(0);}}
+        if (pitch == 88) {if(velocity==0){local.values.transport.replace.set(0);}}
+        if (pitch == 89) {if(velocity==0){local.values.transport.click.set(0);}}
+        if (pitch == 90) {if(velocity==0){local.values.transport.solo.set(0);}}
+        if (pitch == 91) {if(velocity==0){local.values.transport.rewind.set(0);}}
+        if (pitch == 92) {if(velocity==0){local.values.transport.forward.set(0);}}
+        if (pitch == 93) {if(velocity==0){local.values.transport.stop.set(0);}}
+        if (pitch == 94) {if(velocity==0){local.values.transport.play.set(0);}}
+        if (pitch == 95) {if(velocity==0){local.values.transport.recSet.set(0);}}
+        if (pitch == 96) {if(velocity==0){local.values.misc.up.set(0);}}
+        if (pitch == 97) {if(velocity==0){local.values.misc.down.set(0);}}
+        if (pitch == 98) {if(velocity==0){local.values.misc.left.set(0);}}
+        if (pitch == 99) {if(velocity==0){local.values.misc.right.set(0);}}
+        if (pitch == 100) {if(velocity==0){local.values.misc.zoom.set(0);}}
+        if (pitch == 101) {if(velocity==0){local.values.misc.scrub.set(0);}}
+    }
 }
 
 //Upon receiving MIDI Control Change messzge
@@ -426,6 +535,7 @@ function pitchWheelEvent(channel,value){
     //Is Master fader?
     if(channel==9){
         local.values.main.mainFader.set(value/16383);
+        local.sendPitchWheel(channel,value);
     }
     //It's a strip fader
     else{
