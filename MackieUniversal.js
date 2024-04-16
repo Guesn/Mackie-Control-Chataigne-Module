@@ -84,8 +84,8 @@ function init()
     //Calculate Clock Values
     UTCOffset = (yearSecs*1970) + (hourSecs*-2)+(minuteSecs*5) - 22;
     UTCStamp = util.getTimestamp();
-    script.log(util.getTimestamp());
     hours = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs));
+    hours = hours + local.parameters.hoursAdjustment.get();
     //Output Hours Digits
     local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
     local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
@@ -112,6 +112,7 @@ function update(deltaTime)
     //Is calculated 'hours' value different from the displayed one?
     if(hours!=Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))){
         hours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs));
+        hours = hours + local.parameters.hoursAdjustment.get();
         local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
         local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
     }
@@ -158,6 +159,7 @@ function update(deltaTime)
 
 function moduleParameterChanged(param)
 {
+    param.setAttribute("saveValueOnly", false);
     if(param.isParameter())
     {
         
@@ -221,66 +223,91 @@ function moduleParameterChanged(param)
 
 function moduleValueChanged(value)
 {
-    if(value.isParameter())
-    {
-        if(value.name=="faderValue"){
-            local.sendPitchWheel(parseInt(value.getParent().name.substring(5,6)),value.get()*16383);
+    if (midi_in==false){
+        if(value.isParameter())
+        {
+            strip_update(value.name, value.get(), parseInt(value.getParent().name.substring(5,6)), value);
+        }
+    }
+    midi_in = false;
+}
+
+function strip_update(nom, valeur, strip, manu)
+{
+    midi_in = true;
+    if(nom=="faderValue"){
+        local.sendPitchWheel(strip,valeur*16383);
+    }else{
+        if(nom=="meter"){
+            local.sendChannelPressure(1,(valeur*14)+((strip-1)*16));
         }else{
-            if(value.name=="meter"){
-                local.sendChannelPressure(1,(value.get()*14)+((parseInt(value.getParent().name.substring(5,6))-1)*16));
+            if(nom=="select"){
+                local.sendNoteOn(1,strip+23,valeur);
             }else{
-                if(value.name=="select"){
-                    local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))+23,value.get());
-                }else{
-                    if(value.name=="rotaryValue"||value.name=="rotaryMode"){
-                        index = parseInt(value.getParent().name.substring(5,6))-1;
-                        if(((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==7)){
-                            
-                            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*5)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()));
-                        }else{
-                            local.sendCC(0,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()));
-                        }
+                if(nom=="rotaryValue"||nom=="rotaryMode"){
+                    index = strip-1;
+                    script.log(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get());
+                    if(((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==7)){
+                        local.sendCC(1,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*5)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get())-1);
                     }else{
-                        if(value.name=="encoderName"){
-                            // Update display with new encoder name
-                            var index = parseInt(value.getParent().name.substring(1,2))-1;
-                            var newLabel = value.get();
-                            var short = 7-newLabel.length;
-                            var i;
-                            for (i=0;i<short;i++){
-                                newLabel = newLabel+" ";
-                            }
+                        local.sendCC(1,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get())-1);
+                    }
+                }else{
+                    if(nom=="encoderName"){
+                        // Update display with new encoder name
+                        var index = strip-1;
+                        var newLabel = valeur;
+                        var short = 7-newLabel.length;
+                        var i;
+                        for (i=0;i<short;i++){
+                            newLabel = newLabel+" ";
+                        }
+                        if(local.parameters.controlerType == 0){
                             if(short>0){
                                 local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7),newLabel);
                             }else{
                                 local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7),newLabel.substring(0,7));
                             }
-                            init();
                         }else{
-                            if(value.name=="faderName"){
-                                var index = parseInt(value.getParent().name.substring(1,2))-1;
-                                var newLabel = value.get();
-                                var short = 7-newLabel.length;
-                                var i;
-                                for (i=0;i<short;i++){
-                                    newLabel = newLabel+" ";
-                                }
+                            if(short>0){
+                                local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7),newLabel);
+                            }else{
+                                local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7),newLabel.substring(0,7));
+                            }
+                        }
+                        init();
+                    }else{
+                        if(nom=="faderName"){
+                            var index = strip-1;
+                            var newLabel = valeur;
+                            var short = 7-newLabel.length;
+                            var i;
+                            for (i=0;i<short;i++){
+                                newLabel = newLabel+" ";
+                            }
+                            if(local.parameters.controlerType == 0){
                                 if(short>0){
                                     local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7+56),newLabel);
                                 }else{
                                     local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7)+56,newLabel.substring(0,7));
                                 }
-                                init();
                             }else{
-                                if(value.name=="solo"){
-                                    local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))+7,value.get());
+                                if(short>0){
+                                    local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7+56),newLabel);
                                 }else{
-                                    if(value.name=="mute"){
-                                        local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))+15,value.get());
-                                    }else{
-                                        if(value.name=="rec"){
-                                            local.sendNoteOn(1,parseInt(value.getParent().name.substring(5,6))-1,value.get());
-                                        }
+                                    local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7)+56,newLabel.substring(0,7));
+                                }
+                            }
+                            init();
+                        }else{
+                            if(nom=="solo"){
+                                local.sendNoteOn(1,strip+7,valeur);
+                            }else{
+                                if(nom=="mute"){
+                                    local.sendNoteOn(1,strip+15,valeur);
+                                }else{
+                                    if(nom=="rec"){
+                                        local.sendNoteOn(1,strip-1,valeur);
                                     }
                                 }
                             }
@@ -291,7 +318,6 @@ function moduleValueChanged(value)
         }
     }
 }
-
 
 //*****MIDI MODULE SPECIFIC SCRIPTS*****
 
@@ -351,8 +377,10 @@ function noteOnEvent(channel, pitch, velocity)
     if (pitch >= 46 && pitch <= 49){
         if (pitch == 46) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()-1);}
         if (pitch == 47) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()+1);}
-        if (pitch == 48) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()-1);}
-        if (pitch == 49) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()+1);}
+        if (pitch == 48) {local.values.misc.chanPrev.set(1);}
+        if (pitch == 49) {local.values.misc.chanNext.set(1);}
+        // if (pitch == 48) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()-1);}
+        // if (pitch == 49) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()+1);}
     }
     
     //Is it a 'Visual' button?
@@ -360,7 +388,7 @@ function noteOnEvent(channel, pitch, velocity)
         if (pitch == 50) {if(velocity==127){script.log("Flip");local.values.main.flip.set(1);}}
         if (pitch == 51) {if(velocity==127){script.log("Global View");local.values.views.globalView.set(1);}}
         if (pitch == 52) {if(velocity==127){script.log("Name/Value");local.values.display.name_Value.set(1);}}
-        if (pitch == 53) {if(velocity==127){script.log("SMPTE/Beats");local.values.display.SMPTE_Beats.set(1);}}
+        if (pitch == 53) {if(velocity==127){script.log("SMPTE/Beats");local.values.display.sMPTE_Beats.set(1);}}
     }
     
     //Is it a 'Function' button ?
@@ -432,10 +460,10 @@ function noteOnEvent(channel, pitch, velocity)
     }
 
     //Is it a fader touch?
-    if (pitch >= 104 && pitch <= 111 && local.parameters.flashOnTouched.get()){
+    if (pitch >= 104 && pitch <= 111){
         var index = pitch-104;
         local.values.strips.getChild('Strip '+(index+1)).touch.set(true);
-        local.values.strips.getChild('Strip '+(index+1)).select.set("flash");
+        if (local.parameters.flashOnTouched.get()){local.values.strips.getChild('Strip '+(index+1)).select.set("flash");}
     }
 
 }
@@ -463,12 +491,16 @@ function noteOffEvent(channel, pitch, velocity)
         if(velocity==0) {local.values.strips.getChild('Strip '+(index+1)).push.set(0);}
     }
 
+    if (pitch >= 48 && pitch <= 49){
+        if (pitch == 48) {if(velocity==0){local.values.misc.chanPrev.set(0);}}
+        if (pitch == 49) {if(velocity==0){local.values.misc.chanNext.set(0);}}
+    }
     //Is it a 'Visual' button?
     if (pitch >= 50 && pitch <= 53){
         if (pitch == 50) {if(velocity==0){local.values.main.flip.set(0);}}
         if (pitch == 51) {if(velocity==0){local.values.views.globalView.set(0);}}
         if (pitch == 52) {if(velocity==0){local.values.display.name_Value.set(0);}}
-        if (pitch == 53) {if(velocity==0){local.values.display.SMPTE_Beats.set(0);}}
+        if (pitch == 53) {if(velocity==0){local.values.display.sMPTE_Beats.set(0);}}
     }
     //Is it a 'Function' button ?
     if (pitch >= 54 && pitch <= 61){
@@ -533,9 +565,10 @@ function ccEvent(channel, number, value)
 //Upon receiving MIDI PitchWheel message (only fader values)
 function pitchWheelEvent(channel,value){
     //Is Master fader?
+
     if(channel==9){
         local.values.main.mainFader.set(value/16383);
-        local.sendPitchWheel(channel,value);
+        //local.sendPitchWheel(channel,value);
     }
     //It's a strip fader
     else{
