@@ -29,10 +29,18 @@
         viewsArray[5] = "buses";
         viewsArray[6] = "outputs";
         viewsArray[7] = "user";
+    var storedColors = [7, 7, 7, 7, 7, 7, 7, 7];
+    var timeWarningSent = false;
 
 function init()
 {
     script.log("Script Init");
+
+    local.parameters.sequenceTime.setAttribute("root", root.sequences);
+    local.parameters.sequenceTime.setAttribute("allowedTypes", "Float");
+    local.parameters.clockSource.setNext(true);
+    local.parameters.clockSource.setPrevious(true);
+
 
     //Synchronize Arrays 1-7
     for(counter=0;counter<8;counter++){
@@ -62,7 +70,8 @@ function init()
             while((stripArray[counter].length)<7){
                 stripArray[counter]+=" ";
             }
-        } 
+        }
+        storedColors[counter]=local.values.strips.getChild('Strip '+(counter+1)).color.get();
     }
 
     //Synchronize Arrays 8-15
@@ -78,59 +87,109 @@ function init()
         } 
     }
 
-    //Send Assembled String Array to scribble strips
-    local.sendSysex(0x00,0x00,0x66,0x14,0x12,0x00,stripArray);
+    //Send Assembled String Array and colors to scribble strips
+    if(local.parameters.controllerType.get()==0){
+        local.sendSysex(0x00,0x00,0x66,0x14,0x12,0x00,stripArray);
+        local.sendSysex(0x00,0x00,0x66,0x14,0x72,storedColors);
+    }else if(local.parameters.controllerType.get()==1){
+        local.sendSysex(0x00,0x00,0x66,0x15,0x12,0x00,stripArray);
+        local.sendSysex(0x00,0x00,0x66,0x15,0x72,storedColors);
+    }
 
     //Calculate Clock Values
-    UTCOffset = (yearSecs*1970) + (hourSecs*-2)+(minuteSecs*5) - 22;
-    UTCStamp = util.getTimestamp();
-    hours = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs));
-    hours = hours + local.parameters.hoursAdjustment.get();
+    UTCOffset = (yearSecs*1970) + (hourSecs*2)+(minuteSecs*-7) + 24;
+    if (local.parameters.clockSource.get()==0) {
+        UTCStamp = util.getTimestamp();
+        hours = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs)) + local.parameters.timeZone.get();
+        minutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
+        seconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
+        partSeconds = 0;
+    } else if (local.parameters.clockSource.get() == 1){
+        if(local.parameters.sequenceTime.get()) {
+            seqTime = local.parameters.sequenceTime.getTarget().get();
+            newHours = Math.round(Math.floor((seqTime)/hourSecs));
+            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
+            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
+            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
+            timeWarningSent = false;
+        } else {
+            if(!timeWarningSent){
+                util.showMessageBox("Sequence Time","Please set the sequence Time target in the module parameters","warning","OK");
+                timeWarningSent = true;
+            }
+        }
+    }
     //Output Hours Digits
     local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
     local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
-    minutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
+
     //Output Minutes Digits
     local.sendCC(1, 69, 48+Math.floor(Math.floor(minutes%10)));
     local.sendCC(1, 70, 48+Math.floor(Math.floor(minutes/10)));
-    seconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
+
     //Output Seconds Digits
     local.sendCC(1, 67, 48+Math.floor(Math.floor(seconds%10)));
     local.sendCC(1, 68, 48+Math.floor(Math.floor(seconds/10)));
+
+    //Output Decimal Seconds Digits
+    local.sendCC(1, 64, 48);
+    local.sendCC(1, 65, 48+Math.floor(Math.floor(partSeconds%100)/10));
+    local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
 
 }
 
 function update(deltaTime)
 {
+    if (local.parameters.clockSource.get() == 0) {
+        //Get current UTC timestamp
+        UTCStamp = util.getTimestamp();
+        //Unused calculations for years and days based on UTC stamp
+        //var years = Math.round(Math.floor((UTCStamp+UTCOffset)/yearSecs));
+        //var days = Math.round(Math.floor(((UTCStamp+UTCOffset)%yearSecs)/daySecs));
 
-    //Get current UTC timestamp
-    UTCStamp = util.getTimestamp();
-    //Unused calculations for years and days based on UTC stamp
-    //var years = Math.round(Math.floor((UTCStamp+UTCOffset)/yearSecs));
-    //var days = Math.round(Math.floor(((UTCStamp+UTCOffset)%yearSecs)/daySecs));
+        newHours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))+local.parameters.timeZone.get();
+        newMinutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
+        newSeconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
+    } else if (local.parameters.clockSource.get() == 1){
+        if(local.parameters.sequenceTime.get()) {
+            seqTime = local.parameters.sequenceTime.getTarget().get();
+            newHours = Math.round(Math.floor((seqTime)/hourSecs));
+            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
+            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
+            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
+            timeWarningSent = false;
+        } else {
+            if(!timeWarningSent){
+                util.showMessageBox("Sequence Time","Please set the sequence Time target in the module parameters","warning","OK");
+                timeWarningSent = true;
+            }
+        }
+    }
 
-    //Is calculated 'hours' value different from the displayed one?
-    if(hours!=Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))){
-        hours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs));
-        hours = hours + local.parameters.hoursAdjustment.get();
+
+    if (hours != newHours) {
+        hours = newHours;
         local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
         local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
     }
-    //Is calculated 'minutes' value different form the displayed one?
-    if(minutes!=Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)/minuteSecs))){
-        minutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
+
+    if (minutes != newMinutes) {
+        minutes = newMinutes;
         local.sendCC(1, 69, 48+Math.round(Math.floor(minutes%10)));
         local.sendCC(1, 70, 48+Math.round(Math.floor(minutes/10)));
     }
-    //Is calculated 'seconds' value different from the displayed one?
-    if(seconds!=Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs))){
-        
-        seconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
+
+    if (seconds != newSeconds) {
+        seconds = newSeconds;
         local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
         local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
     }
-
     
+    if (partSeconds != newPartSeconds) {
+        partSeconds = newPartSeconds;
+        local.sendCC(1, 65, 48+Math.floor((partSeconds%100)/10));
+        local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
+    }
 
     // Check device change
     if(olddevice != local.parameters.devices.get()){
@@ -217,6 +276,11 @@ function moduleParameterChanged(param)
                 }
             }
         }
+
+        //Did we change the Controller type ?
+        if(param.name=="controllerType"){
+            init();
+        }
     }
 }
 
@@ -226,96 +290,87 @@ function moduleValueChanged(value)
     if (midi_in==false){
         if(value.isParameter())
         {
-            strip_update(value.name, value.get(), parseInt(value.getParent().name.substring(5,6)), value);
+            strip_update(value.name, value.get(), parseInt(value.getParent().name.substring(5,6)));
         }
     }
     midi_in = false;
 }
 
-function strip_update(nom, valeur, strip, manu)
+function strip_update(name, value, strip)
 {
     midi_in = true;
-    if(nom=="faderValue"){
-        local.sendPitchWheel(strip,valeur*16383);
-    }else{
-        if(nom=="meter"){
-            local.sendChannelPressure(1,(valeur*14)+((strip-1)*16));
+    if(name=="faderValue"){
+        local.sendPitchWheel(strip,value*16383);
+    }
+    
+    if(name=="meter"){
+        local.sendChannelPressure(1,(value*14)+((strip-1)*16));
+    }
+
+    if(name=="select"){
+        local.sendNoteOn(1,strip+23,value);
+    }
+
+    if(name=="rotaryValue"||name=="rotaryMode"){
+        index = strip-1;
+        //script.log(local.values.strips.getChild('Strip '+strip).rotaryMode.get());
+        if(((local.values.strips.getChild('Strip '+strip).rotaryMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+strip).rotaryMode.get()-1)/16==7)){
+            local.sendCC(1,0x30+index,(local.values.strips.getChild('Strip '+strip).rotaryValue.get()*5)+(local.values.strips.getChild('Strip '+strip).rotaryMode.get())-1);
         }else{
-            if(nom=="select"){
-                local.sendNoteOn(1,strip+23,valeur);
-            }else{
-                if(nom=="rotaryValue"||nom=="rotaryMode"){
-                    index = strip-1;
-                    script.log(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get());
-                    if(((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==3)||((local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get()-1)/16==7)){
-                        local.sendCC(1,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*5)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get())-1);
-                    }else{
-                        local.sendCC(1,0x30+index,(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+(index+1)).rotaryMode.get())-1);
-                    }
-                }else{
-                    if(nom=="encoderName"){
-                        // Update display with new encoder name
-                        var index = strip-1;
-                        var newLabel = valeur;
-                        var short = 7-newLabel.length;
-                        var i;
-                        for (i=0;i<short;i++){
-                            newLabel = newLabel+" ";
-                        }
-                        if(local.parameters.controlerType == 0){
-                            if(short>0){
-                                local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7),newLabel);
-                            }else{
-                                local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7),newLabel.substring(0,7));
-                            }
-                        }else{
-                            if(short>0){
-                                local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7),newLabel);
-                            }else{
-                                local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7),newLabel.substring(0,7));
-                            }
-                        }
-                        init();
-                    }else{
-                        if(nom=="faderName"){
-                            var index = strip-1;
-                            var newLabel = valeur;
-                            var short = 7-newLabel.length;
-                            var i;
-                            for (i=0;i<short;i++){
-                                newLabel = newLabel+" ";
-                            }
-                            if(local.parameters.controlerType == 0){
-                                if(short>0){
-                                    local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7+56),newLabel);
-                                }else{
-                                    local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7)+56,newLabel.substring(0,7));
-                                }
-                            }else{
-                                if(short>0){
-                                    local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7+56),newLabel);
-                                }else{
-                                    local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7)+56,newLabel.substring(0,7));
-                                }
-                            }
-                            init();
-                        }else{
-                            if(nom=="solo"){
-                                local.sendNoteOn(1,strip+7,valeur);
-                            }else{
-                                if(nom=="mute"){
-                                    local.sendNoteOn(1,strip+15,valeur);
-                                }else{
-                                    if(nom=="rec"){
-                                        local.sendNoteOn(1,strip-1,valeur);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            local.sendCC(1,0x30+index,(local.values.strips.getChild('Strip '+strip).rotaryValue.get()*11)+(local.values.strips.getChild('Strip '+strip).rotaryMode.get())-1);
         }
+    }
+
+    if(name=="encoderName"){
+        // Update display with new encoder name
+        var index = strip-1;
+        var newLabel = value;
+        var short = 7-newLabel.length;
+        var i;
+        for (i=0;i<short;i++){
+            newLabel = newLabel+" ";
+        }
+        if(local.parameters.controllerType.get() == 0){
+            local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7),newLabel.substring(0,7));
+        }else if (local.parameters.controllerType.get() == 1){
+            local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7),newLabel.substring(0,7));
+        }
+    }
+
+    if(name=="faderName"){
+        var index = strip-1;
+        var newLabel = value;
+        var short = 7-newLabel.length;
+        var i;
+        for (i=0;i<short;i++){
+            newLabel = newLabel+" ";
+        }
+        if(local.parameters.controllerType.get() == 0){
+            local.sendSysex(0x00,0x00,0x66,0x14,0x12,((index)*7)+56,newLabel.substring(0,7));
+        }else if(local.parameters.controllerType.get() == 1){
+            local.sendSysex(0x00,0x00,0x66,0x15,0x12,((index)*7)+56,newLabel.substring(0,7));
+        }
+    }
+
+    if(name=='color'){
+        storedColors[strip-1] = value;
+        if(local.parameters.controllerType.get() == 0){
+            local.sendSysex(0x00,0x00,0x66,0x14,0x72,storedColors);
+        } else if(local.parameters.controllerType.get() ==1){
+            local.sendSysex(0x00,0x00,0x66,0x15,0x72,storedColors);
+        }
+    }
+        
+    if(name=="solo"){
+        local.sendNoteOn(1,strip+7,value);
+    }
+        
+    if(name=="mute"){
+        local.sendNoteOn(1,strip+15,value);
+    }
+
+    if(name=="rec"){
+        local.sendNoteOn(1,strip-1,value);
     }
 }
 
@@ -558,6 +613,16 @@ function ccEvent(channel, number, value)
         }else{
             //Add value to rotaryValueue
             local.values.strips.getChild('Strip '+(index+1)).rotaryValue.set(local.values.strips.getChild('Strip '+(index+1)).rotaryValue.get()+(value/256));
+        }
+    }
+    //Is it the Scrub Wheel?
+    if(channel==1 && number==60){
+        if(value == 1){
+            //scrub forward
+            local.values.transport.wheelClockwise.trigger();
+        }else if(value == 65){
+            //scrub reverse
+            local.values.transport.wheelCounter_Clockwise.trigger();
         }
     }
 }

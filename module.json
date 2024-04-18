@@ -3,7 +3,7 @@
 	"type":"MIDI",
 	"path":"Hardware",
 	
-	"version":"1.0.1",
+	"version":"1.0.2",
 	"description":"Special MIDI Module for Mackie compatible controlers",
 	"url":"https://github.com/Guesn/Mackie-Control-Chataigne-Module",
 	"downloadURL":"https://github.com/Guesn/Mackie-Control-Chataigne-Module/archive/refs/heads/main.zip",
@@ -18,12 +18,14 @@
 	"parameters":
 	{
 		"type":"Container",
-		"ControlerType": {"type":"Enum", "options": {"Standard":0, "Extender":1}},
-		"HoursAdjustment": {"type":"Integer", "min":-12,"max":12},
+		"ControllerType": {"type":"Enum", "options": {"Standard":0, "X-Touch Extender":1}},
+		"ClockSource":{"type":"Enum","options":{"Local":0,"Sequence":1}},
+		"TimeZone":{"type":"Integer","min":-12,"max":12,"description":"Timezone to use when clock source is set to Local","dependency":{"source":"clockSource","value":0,"check":"equals","action":"show"}},
+		"Sequence Time":{"type":"Target","description":"Time from Sequence to display when clock source is set to sequence","dependency":{"source":"clockSource","value":1,"check":"equals","action":"show"}},
 		"FlashOnTouched": {"type":"Boolean"},
 		"FlashOnSolo": {"type":"Boolean"},
-		"stripIndex": {"type":"Integer"},
-		"bankIndex": {"type":"Integer", "min":1},
+		"stripIndex": {"type":"Integer","min":0,"max":10},
+		"bankIndex": {"type":"Integer", "min":0},
 		"ActiveView": {"type":"Enum", "options": {"MidiTracks":0, "Inputs":1, "AudioTracks":2, "AudioInst":3, "Aux":4, "Buses":5, "Output":6, "User":7}},
 		"EncodersAssign": {"type":"Enum", "options": {"Track":0, "Pan/Surround":1, "EQ":2, "Send":3, "Plug-in":4, "Inst":5}}
 	},
@@ -37,7 +39,10 @@
 	"hideDefaultParameters":
 	[
 		"autoAdd",
-		"autoFeedback"
+		"autoFeedback",
+		"useHierarchy",
+		"octaveShift",
+		"usePitchForNoteNames"
 	],
 
 
@@ -49,14 +54,15 @@
 	"values":
 	{
 		"type":"Container",
-		
-		
+
+
 		"Strips":{
 			"type":"Container",
 			"collapsed":true,
 			"Strip 1":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -73,6 +79,7 @@
 			"Strip 2":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "readOnly":true, "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -89,6 +96,7 @@
 			"Strip 3":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "readOnly":true, "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -105,6 +113,7 @@
 			"Strip 4":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "readOnly":true, "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -121,6 +130,7 @@
 			"Strip 5":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "readOnly":true, "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -137,6 +147,7 @@
 			"Strip 6":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "readOnly":true, "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -153,6 +164,7 @@
 			"Strip 7":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "readOnly":true, "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -169,6 +181,7 @@
 			"Strip 8":{
 				"type":"Container",
 				"collapsed":true,
+				"Color":{"type":"Enum","options":{"White":7, "Red":1, "Yellow":3, "Green":2, "Cyan":6, "Blue":4, "Magenta":5,"Black":0}},
 				"EncoderName": {"type":"String"},
 				"RotaryValue": {"type":"Float", "readOnly":true, "min":0, "max":1},
 				"RotaryMode": {"type":"Enum", "options": {"Single":1, "BoostCut":17, "Wrap":33, "Spread":49, "Single2":65, "BoostCut2":81,"Wrap2":97,"Spread2":113}},
@@ -272,7 +285,9 @@
 			"Forward":{"type":"Boolean", "readOnly":true},
 			"Stop":{"type":"Boolean", "readOnly":true},
 			"Play":{"type":"Boolean", "readOnly":true},
-			"RecSet":{"type":"Boolean", "readOnly":true}
+			"RecSet":{"type":"Boolean", "readOnly":true},
+			"Wheel Clockwise":{"type":"Trigger","readOnly":true},
+			"Wheel Counter-Clockwise":{"type":"Trigger","readOnly":true}
 		},
 		"Misc":{
 			"type":"Container",
@@ -286,8 +301,7 @@
 			"Left":{"type":"Boolean", "readOnly":true},
 			"Right":{"type":"Boolean", "readOnly":true},
 			"Zoom":{"type":"Boolean", "readOnly":true},
-			"Scrub":{"type":"Boolean", "readOnly":true},
-			"Wheel": {"type":"Float", "readOnly":true, "min":0, "max":1}
+			"Scrub":{"type":"Boolean", "readOnly":true}
 		}
 	},
 	"commands":
@@ -319,6 +333,6 @@
 		        	"default":1
 		        }
 			}
-		},
+		}
 	}
 }
