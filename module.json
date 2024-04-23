@@ -24,10 +24,10 @@
 		"Sequence Time":{"type":"Target","description":"Time from Sequence to display when clock source is set to sequence","dependency":{"source":"clockSource","value":1,"check":"equals","action":"show"}},
 		"FlashOnTouched": {"type":"Boolean"},
 		"FlashOnSolo": {"type":"Boolean"},
-		"stripIndex": {"type":"Integer","min":0,"max":10},
+		"stripIndex": {"type":"Integer","min":0},
 		"bankIndex": {"type":"Integer", "min":0},
 		"ActiveView": {"type":"Enum", "options": {"MidiTracks":0, "Inputs":1, "AudioTracks":2, "AudioInst":3, "Aux":4, "Buses":5, "Output":6, "User":7}},
-		"EncodersAssign": {"type":"Enum", "options": {"Track":0, "Pan/Surround":1, "EQ":2, "Send":3, "Plug-in":4, "Inst":5}}
+		"EncodersAssign": {"type":"Enum", "options": {"Track":0, "Pan/Surround":2, "EQ":4, "Send":1, "Plug-in":3, "Inst":5}}
 	},
 
 	"defaults":
@@ -58,7 +58,7 @@
 
 		"Strips":{
 			"type":"Container",
-			"collapsed":true,
+			"collapsed":false,
 			"Strip 1":{
 				"type":"Container",
 				"collapsed":true,
@@ -208,10 +208,10 @@
 			"type":"Container",
 			"collapsed":true,
 			"Track":{"type":"Boolean", "readOnly":true},
-			"Send":{"type":"Boolean", "readOnly":true},
 			"Pan":{"type":"Boolean", "readOnly":true},
-			"Plugin":{"type":"Boolean", "readOnly":true},
 			"EQ":{"type":"Boolean", "readOnly":true},
+			"Send":{"type":"Boolean", "readOnly":true},
+			"Plugin":{"type":"Boolean", "readOnly":true},
 			"Instrument":{"type":"Boolean", "readOnly":true}
 		},
 		"Display":{

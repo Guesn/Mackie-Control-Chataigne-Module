@@ -34,13 +34,22 @@
 
 function init()
 {
+    local.scripts.mackieUniversal.enableLog.set(true);
+
     script.log("Script Init");
 
     local.parameters.sequenceTime.setAttribute("root", root.sequences);
     local.parameters.sequenceTime.setAttribute("allowedTypes", "Float");
     local.parameters.clockSource.setNext(true);
     local.parameters.clockSource.setPrevious(true);
+    local.values.mtc.setCollapsed(true);
+    local.values.tempo.setCollapsed(true);
 
+    //initialize Strip Index, Active View, and Encoder Assign
+    moduleParameterChanged(local.parameters.stripIndex);
+    moduleParameterChanged(local.parameters.activeView);
+    moduleParameterChanged(local.parameters.encodersAssign);
+    
 
     //Synchronize Arrays 1-7
     for(counter=0;counter<8;counter++){
@@ -430,8 +439,14 @@ function noteOnEvent(channel, pitch, velocity)
     
     //Is it a 'Move' button?
     if (pitch >= 46 && pitch <= 49){
-        if (pitch == 46) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()-1);}
-        if (pitch == 47) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()+1);}
+        if (pitch == 46) {
+            local.parameters.bankIndex.set(local.parameters.bankIndex.get()-1);
+            local.values.misc.bankPrev.set(1);
+        }
+        if (pitch == 47) {
+            local.parameters.bankIndex.set(local.parameters.bankIndex.get()+1);
+            local.values.misc.bankNext.set(1);
+        }
         if (pitch == 48) {local.values.misc.chanPrev.set(1);}
         if (pitch == 49) {local.values.misc.chanNext.set(1);}
         // if (pitch == 48) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()-1);}
@@ -521,6 +536,11 @@ function noteOnEvent(channel, pitch, velocity)
         if (local.parameters.flashOnTouched.get()){local.values.strips.getChild('Strip '+(index+1)).select.set("flash");}
     }
 
+    //Is it the Main touch?
+    if (pitch == 112){
+        local.values.main.mainTouch.set(true);
+    }
+
 }
 
 function noteOffEvent(channel, pitch, velocity)
@@ -540,13 +560,20 @@ function noteOffEvent(channel, pitch, velocity)
         }
     }
 
+    //Is it the Main touch release?
+    if (pitch == 112){
+        local.values.main.mainTouch.set(false);
+    }
+
     //Is it a 'Push' button?
     if (pitch >= 32 && pitch <= 39){
         var index = pitch-32;
         if(velocity==0) {local.values.strips.getChild('Strip '+(index+1)).push.set(0);}
     }
 
-    if (pitch >= 48 && pitch <= 49){
+    if (pitch >= 46 && pitch <= 49){
+        if (pitch == 46) {if(velocity==0){local.values.misc.bankPrev.set(0);}}
+        if (pitch == 47) {if(velocity==0){local.values.misc.bankNext.set(0);}}
         if (pitch == 48) {if(velocity==0){local.values.misc.chanPrev.set(0);}}
         if (pitch == 49) {if(velocity==0){local.values.misc.chanNext.set(0);}}
     }
