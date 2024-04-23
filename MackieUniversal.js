@@ -8,6 +8,10 @@
     var minuteSecs = 60;//Number of seconds in a minute
     var UTCStamp = 0;//Holds UTC TimeUTCStamp for date calculation
     var UTCOffset = 0;//Holds UTC Time UTCOffset for local synchronization
+    var hours = 0;//current clock hours
+    var minutes = 0;//current clock minutes
+    var seconds = 0;//current clock seconds
+    var partSeconds = 0;//current clock partial seconds
     var frameTicker = 0;//Used to count frames for clip reset
     var deviceTicker = 0;//Used to init device with delay
     var counter = 0;//Used for loop iteration
@@ -107,89 +111,13 @@ function init()
 
     //Calculate Clock Values
     UTCOffset = (yearSecs*1970) + (hourSecs*2)+(minuteSecs*-7) + 24;
-    if (local.parameters.clockSource.get()==0) {
-        UTCStamp = util.getTimestamp();
-        hours = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs)) + local.parameters.timeZone.get();
-        minutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
-        seconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
-        partSeconds = 0;
-    } else if (local.parameters.clockSource.get() == 1){
-        if(local.parameters.sequenceTime.getTarget()) {
-            seqTime = local.parameters.sequenceTime.getTarget().get();
-            newHours = Math.round(Math.floor((seqTime)/hourSecs));
-            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
-            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
-            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
-            timeWarningSent = false;
-        }
-    }
-    //Output Hours Digits
-    local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
-    local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
-
-    //Output Minutes Digits
-    local.sendCC(1, 69, 48+Math.floor(Math.floor(minutes%10)));
-    local.sendCC(1, 70, 48+Math.floor(Math.floor(minutes/10)));
-
-    //Output Seconds Digits
-    local.sendCC(1, 67, 48+Math.floor(Math.floor(seconds%10)));
-    local.sendCC(1, 68, 48+Math.floor(Math.floor(seconds/10)));
-
-    //Output Decimal Seconds Digits
-    local.sendCC(1, 64, 48);
-    local.sendCC(1, 65, 48+Math.floor(Math.floor(partSeconds%100)/10));
-    local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
-
+    updateClock();
 }
 
 function update(deltaTime)
 {
-    if (local.parameters.clockSource.get() == 0) {
-        //Get current UTC timestamp
-        UTCStamp = util.getTimestamp();
-        //Unused calculations for years and days based on UTC stamp
-        //var years = Math.round(Math.floor((UTCStamp+UTCOffset)/yearSecs));
-        //var days = Math.round(Math.floor(((UTCStamp+UTCOffset)%yearSecs)/daySecs));
-
-        newHours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))+local.parameters.timeZone.get();
-        newMinutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
-        newSeconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
-    } else if (local.parameters.clockSource.get() == 1){
-        if(local.parameters.sequenceTime.getTarget()) {
-            seqTime = local.parameters.sequenceTime.getTarget().get();
-            newHours = Math.round(Math.floor((seqTime)/hourSecs));
-            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
-            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
-            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
-            timeWarningSent = false;
-        }
-    }
-
-
-    if (hours != newHours) {
-        hours = newHours;
-        local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
-        local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
-    }
-
-    if (minutes != newMinutes) {
-        minutes = newMinutes;
-        local.sendCC(1, 69, 48+Math.round(Math.floor(minutes%10)));
-        local.sendCC(1, 70, 48+Math.round(Math.floor(minutes/10)));
-    }
-
-    if (seconds != newSeconds) {
-        seconds = newSeconds;
-        local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
-        local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
-    }
+    updateClock();
     
-    if (partSeconds != newPartSeconds) {
-        partSeconds = newPartSeconds;
-        local.sendCC(1, 65, 48+Math.floor((partSeconds%100)/10));
-        local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
-    }
-
     // Check device change
     if(olddevice != local.parameters.devices.get()){
         deviceTicker++;
@@ -663,4 +591,55 @@ function pitchWheelEvent(channel,value){
 function sysExEvent(data)
 {
     //script.log("Sysex Message received, "+data.length+" bytes :");
+}
+
+function updateClock()
+{  
+    if (local.parameters.clockSource.get() == 0) {
+        //Get current UTC timestamp
+        UTCStamp = util.getTimestamp();
+        
+        //Unused calculations for years and days based on UTC stamp
+        //var years = Math.round(Math.floor((UTCStamp+UTCOffset)/yearSecs));
+        //var days = Math.round(Math.floor(((UTCStamp+UTCOffset)%yearSecs)/daySecs));
+
+        newHours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))+local.parameters.timeZone.get();
+        newMinutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
+        newSeconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
+        newPartSeconds = 0;
+    } else if (local.parameters.clockSource.get() == 1){
+        if(local.parameters.sequenceTime.getTarget()) {
+            seqTime = local.parameters.sequenceTime.getTarget().get();
+            newHours = Math.round(Math.floor((seqTime)/hourSecs));
+            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
+            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
+            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
+            timeWarningSent = false;
+        }
+    }
+
+
+    if (hours != newHours) {
+        hours = newHours;
+        local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
+        local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
+    }
+
+    if (minutes != newMinutes) {
+        minutes = newMinutes;
+        local.sendCC(1, 69, 48+Math.round(Math.floor(minutes%10)));
+        local.sendCC(1, 70, 48+Math.round(Math.floor(minutes/10)));
+    }
+
+    if (seconds != newSeconds) {
+        seconds = newSeconds;
+        local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
+        local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
+    }
+    
+    if (partSeconds != newPartSeconds) {
+        partSeconds = newPartSeconds;
+        local.sendCC(1, 65, 48+Math.floor((partSeconds%100)/10));
+        local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
+    }
 }
