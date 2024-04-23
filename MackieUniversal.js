@@ -114,18 +114,13 @@ function init()
         seconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
         partSeconds = 0;
     } else if (local.parameters.clockSource.get() == 1){
-        if(local.parameters.sequenceTime.get()) {
+        if(local.parameters.sequenceTime.getTarget()) {
             seqTime = local.parameters.sequenceTime.getTarget().get();
             newHours = Math.round(Math.floor((seqTime)/hourSecs));
             newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
             newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
             newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
             timeWarningSent = false;
-        } else {
-            if(!timeWarningSent){
-                util.showMessageBox("Sequence Time","Please set the sequence Time target in the module parameters","warning","OK");
-                timeWarningSent = true;
-            }
         }
     }
     //Output Hours Digits
@@ -160,18 +155,13 @@ function update(deltaTime)
         newMinutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
         newSeconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
     } else if (local.parameters.clockSource.get() == 1){
-        if(local.parameters.sequenceTime.get()) {
+        if(local.parameters.sequenceTime.getTarget()) {
             seqTime = local.parameters.sequenceTime.getTarget().get();
             newHours = Math.round(Math.floor((seqTime)/hourSecs));
             newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
             newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
             newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
             timeWarningSent = false;
-        } else {
-            if(!timeWarningSent){
-                util.showMessageBox("Sequence Time","Please set the sequence Time target in the module parameters","warning","OK");
-                timeWarningSent = true;
-            }
         }
     }
 

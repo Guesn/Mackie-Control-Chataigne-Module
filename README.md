@@ -9,6 +9,7 @@ Bug Fixes
 - Main fader touch
 - Bank Prev and Bank Next are now represented in Values.misc as well. The values were there, but not implemented, now they work.
 - Strip Index, Active View, and Encoders Assign parameters are checked on startup, and sent to the device.
+- Sequence time now checks to avoid warning
 
 1.0.2
 - Added support for X-Touch Extender Scribble Strips
