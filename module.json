@@ -3,7 +3,7 @@
 	"type":"MIDI",
 	"path":"Hardware",
 	
-	"version":"1.0.2",
+	"version":"1.0.3",
 	"description":"Special MIDI Module for Mackie compatible controlers",
 	"url":"https://github.com/Guesn/Mackie-Control-Chataigne-Module",
 	"downloadURL":"https://github.com/Guesn/Mackie-Control-Chataigne-Module/archive/refs/heads/main.zip",
