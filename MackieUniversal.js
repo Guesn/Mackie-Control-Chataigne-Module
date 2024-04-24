@@ -8,6 +8,10 @@
     var minuteSecs = 60;//Number of seconds in a minute
     var UTCStamp = 0;//Holds UTC TimeUTCStamp for date calculation
     var UTCOffset = 0;//Holds UTC Time UTCOffset for local synchronization
+    var hours = 0;//current clock hours
+    var minutes = 0;//current clock minutes
+    var seconds = 0;//current clock seconds
+    var partSeconds = 0;//current clock partial seconds
     var frameTicker = 0;//Used to count frames for clip reset
     var deviceTicker = 0;//Used to init device with delay
     var counter = 0;//Used for loop iteration
@@ -34,13 +38,22 @@
 
 function init()
 {
+    local.scripts.mackieUniversal.enableLog.set(true);
+
     script.log("Script Init");
 
     local.parameters.sequenceTime.setAttribute("root", root.sequences);
     local.parameters.sequenceTime.setAttribute("allowedTypes", "Float");
     local.parameters.clockSource.setNext(true);
     local.parameters.clockSource.setPrevious(true);
+    local.values.mtc.setCollapsed(true);
+    local.values.tempo.setCollapsed(true);
 
+    //initialize Strip Index, Active View, and Encoder Assign
+    moduleParameterChanged(local.parameters.stripIndex);
+    moduleParameterChanged(local.parameters.activeView);
+    moduleParameterChanged(local.parameters.encodersAssign);
+    
 
     //Synchronize Arrays 1-7
     for(counter=0;counter<8;counter++){
@@ -98,99 +111,13 @@ function init()
 
     //Calculate Clock Values
     UTCOffset = (yearSecs*1970) + (hourSecs*2)+(minuteSecs*-7) + 24;
-    if (local.parameters.clockSource.get()==0) {
-        UTCStamp = util.getTimestamp();
-        hours = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs)) + local.parameters.timeZone.get();
-        minutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
-        seconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
-        partSeconds = 0;
-    } else if (local.parameters.clockSource.get() == 1){
-        if(local.parameters.sequenceTime.get()) {
-            seqTime = local.parameters.sequenceTime.getTarget().get();
-            newHours = Math.round(Math.floor((seqTime)/hourSecs));
-            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
-            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
-            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
-            timeWarningSent = false;
-        } else {
-            if(!timeWarningSent){
-                util.showMessageBox("Sequence Time","Please set the sequence Time target in the module parameters","warning","OK");
-                timeWarningSent = true;
-            }
-        }
-    }
-    //Output Hours Digits
-    local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
-    local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
-
-    //Output Minutes Digits
-    local.sendCC(1, 69, 48+Math.floor(Math.floor(minutes%10)));
-    local.sendCC(1, 70, 48+Math.floor(Math.floor(minutes/10)));
-
-    //Output Seconds Digits
-    local.sendCC(1, 67, 48+Math.floor(Math.floor(seconds%10)));
-    local.sendCC(1, 68, 48+Math.floor(Math.floor(seconds/10)));
-
-    //Output Decimal Seconds Digits
-    local.sendCC(1, 64, 48);
-    local.sendCC(1, 65, 48+Math.floor(Math.floor(partSeconds%100)/10));
-    local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
-
+    updateClock();
 }
 
 function update(deltaTime)
 {
-    if (local.parameters.clockSource.get() == 0) {
-        //Get current UTC timestamp
-        UTCStamp = util.getTimestamp();
-        //Unused calculations for years and days based on UTC stamp
-        //var years = Math.round(Math.floor((UTCStamp+UTCOffset)/yearSecs));
-        //var days = Math.round(Math.floor(((UTCStamp+UTCOffset)%yearSecs)/daySecs));
-
-        newHours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))+local.parameters.timeZone.get();
-        newMinutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
-        newSeconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
-    } else if (local.parameters.clockSource.get() == 1){
-        if(local.parameters.sequenceTime.get()) {
-            seqTime = local.parameters.sequenceTime.getTarget().get();
-            newHours = Math.round(Math.floor((seqTime)/hourSecs));
-            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
-            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
-            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
-            timeWarningSent = false;
-        } else {
-            if(!timeWarningSent){
-                util.showMessageBox("Sequence Time","Please set the sequence Time target in the module parameters","warning","OK");
-                timeWarningSent = true;
-            }
-        }
-    }
-
-
-    if (hours != newHours) {
-        hours = newHours;
-        local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
-        local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
-    }
-
-    if (minutes != newMinutes) {
-        minutes = newMinutes;
-        local.sendCC(1, 69, 48+Math.round(Math.floor(minutes%10)));
-        local.sendCC(1, 70, 48+Math.round(Math.floor(minutes/10)));
-    }
-
-    if (seconds != newSeconds) {
-        seconds = newSeconds;
-        local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
-        local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
-    }
+    updateClock();
     
-    if (partSeconds != newPartSeconds) {
-        partSeconds = newPartSeconds;
-        local.sendCC(1, 65, 48+Math.floor((partSeconds%100)/10));
-        local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
-    }
-
     // Check device change
     if(olddevice != local.parameters.devices.get()){
         deviceTicker++;
@@ -430,8 +357,14 @@ function noteOnEvent(channel, pitch, velocity)
     
     //Is it a 'Move' button?
     if (pitch >= 46 && pitch <= 49){
-        if (pitch == 46) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()-1);}
-        if (pitch == 47) {local.parameters.bankIndex.set(local.parameters.bankIndex.get()+1);}
+        if (pitch == 46) {
+            local.parameters.bankIndex.set(local.parameters.bankIndex.get()-1);
+            local.values.misc.bankPrev.set(1);
+        }
+        if (pitch == 47) {
+            local.parameters.bankIndex.set(local.parameters.bankIndex.get()+1);
+            local.values.misc.bankNext.set(1);
+        }
         if (pitch == 48) {local.values.misc.chanPrev.set(1);}
         if (pitch == 49) {local.values.misc.chanNext.set(1);}
         // if (pitch == 48) {local.parameters.stripIndex.set(local.parameters.stripIndex.get()-1);}
@@ -521,6 +454,11 @@ function noteOnEvent(channel, pitch, velocity)
         if (local.parameters.flashOnTouched.get()){local.values.strips.getChild('Strip '+(index+1)).select.set("flash");}
     }
 
+    //Is it the Main touch?
+    if (pitch == 112){
+        local.values.main.mainTouch.set(true);
+    }
+
 }
 
 function noteOffEvent(channel, pitch, velocity)
@@ -540,13 +478,20 @@ function noteOffEvent(channel, pitch, velocity)
         }
     }
 
+    //Is it the Main touch release?
+    if (pitch == 112){
+        local.values.main.mainTouch.set(false);
+    }
+
     //Is it a 'Push' button?
     if (pitch >= 32 && pitch <= 39){
         var index = pitch-32;
         if(velocity==0) {local.values.strips.getChild('Strip '+(index+1)).push.set(0);}
     }
 
-    if (pitch >= 48 && pitch <= 49){
+    if (pitch >= 46 && pitch <= 49){
+        if (pitch == 46) {if(velocity==0){local.values.misc.bankPrev.set(0);}}
+        if (pitch == 47) {if(velocity==0){local.values.misc.bankNext.set(0);}}
         if (pitch == 48) {if(velocity==0){local.values.misc.chanPrev.set(0);}}
         if (pitch == 49) {if(velocity==0){local.values.misc.chanNext.set(0);}}
     }
@@ -646,4 +591,55 @@ function pitchWheelEvent(channel,value){
 function sysExEvent(data)
 {
     //script.log("Sysex Message received, "+data.length+" bytes :");
+}
+
+function updateClock()
+{  
+    if (local.parameters.clockSource.get() == 0) {
+        //Get current UTC timestamp
+        UTCStamp = util.getTimestamp();
+        
+        //Unused calculations for years and days based on UTC stamp
+        //var years = Math.round(Math.floor((UTCStamp+UTCOffset)/yearSecs));
+        //var days = Math.round(Math.floor(((UTCStamp+UTCOffset)%yearSecs)/daySecs));
+
+        newHours = Math.floor(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)/hourSecs))+local.parameters.timeZone.get();
+        newMinutes = Math.round(Math.floor((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs/minuteSecs));
+        newSeconds = Math.round(Math.floor(((((UTCStamp+UTCOffset)%yearSecs)%daySecs)%hourSecs)%minuteSecs));
+        newPartSeconds = 0;
+    } else if (local.parameters.clockSource.get() == 1){
+        if(local.parameters.sequenceTime.getTarget()) {
+            seqTime = local.parameters.sequenceTime.getTarget().get();
+            newHours = Math.round(Math.floor((seqTime)/hourSecs));
+            newMinutes = Math.round(Math.floor((seqTime)%hourSecs/minuteSecs));
+            newSeconds = Math.round(Math.floor(((seqTime)%hourSecs)%minuteSecs));
+            newPartSeconds = (seqTime - hours*hourSecs - minutes*minuteSecs - seconds)*1000;
+            timeWarningSent = false;
+        }
+    }
+
+
+    if (hours != newHours) {
+        hours = newHours;
+        local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
+        local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
+    }
+
+    if (minutes != newMinutes) {
+        minutes = newMinutes;
+        local.sendCC(1, 69, 48+Math.round(Math.floor(minutes%10)));
+        local.sendCC(1, 70, 48+Math.round(Math.floor(minutes/10)));
+    }
+
+    if (seconds != newSeconds) {
+        seconds = newSeconds;
+        local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
+        local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
+    }
+    
+    if (partSeconds != newPartSeconds) {
+        partSeconds = newPartSeconds;
+        local.sendCC(1, 65, 48+Math.floor((partSeconds%100)/10));
+        local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
+    }
 }
