@@ -3,6 +3,11 @@ A Chataigne module for Mackie protocole compatible MIDI Controllers
 WIP
 
 Changelog 
+1.0.4
+Bug Fix
+- Make sure clock is updated consistantly (force draw every second and a half)
+- Force faders to go all the way from 0 to 1, instead of .999
+
 1.0.3
 Bug Fixes
 - Encoder Assign lights fix Enum parameter
