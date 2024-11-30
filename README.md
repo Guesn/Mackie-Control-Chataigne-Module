@@ -1,8 +1,13 @@
 # Mackie-Universal-Chataigne-Module
-A Chataigne module for Mackie protocole compatible MIDI Controllers
+A Chataigne module for the X-Touch Series and other Mackie protocol compatible MIDI Controllers
 WIP
 
 Changelog 
+1.0.4
+Bug Fix
+- Make sure clock is updated consistantly (force draw every 1.5 seconds)
+- Force faders to go all the way from 0 to 1, instead of .999
+
 1.0.3
 Bug Fixes
 - Encoder Assign lights fix Enum parameter

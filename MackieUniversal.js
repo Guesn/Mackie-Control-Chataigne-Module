@@ -35,6 +35,7 @@
         viewsArray[7] = "user";
     var storedColors = [7, 7, 7, 7, 7, 7, 7, 7];
     var timeWarningSent = false;
+    var forceUpdateClock = false;
 
 function init()
 {
@@ -138,6 +139,7 @@ function update(deltaTime)
         for(i=0;i<8;i++){
             local.sendChannelPressure(1,15+(16*i));
         }
+        forceUpdateClock = true;
     }
 }
 
@@ -577,13 +579,13 @@ function pitchWheelEvent(channel,value){
     //Is Master fader?
 
     if(channel==9){
-        local.values.main.mainFader.set(value/16383);
+        local.values.main.mainFader.set(value/16380);
         //local.sendPitchWheel(channel,value);
     }
     //It's a strip fader
     else{
         //Update strip module with new value
-        local.values.strips.getChild('Strip '+channel).faderValue.set(value/16383);
+        local.values.strips.getChild('Strip '+channel).faderValue.set(value/16380);
     }
 }
 
@@ -619,27 +621,28 @@ function updateClock()
     }
 
 
-    if (hours != newHours) {
+    if (hours != newHours || forceUpdateClock) {
         hours = newHours;
         local.sendCC(1, 71, 48+Math.floor(Math.floor(hours%10)));
         local.sendCC(1, 72, 48+Math.floor(Math.floor(hours/10)));
     }
 
-    if (minutes != newMinutes) {
+    if (minutes != newMinutes || forceUpdateClock) {
         minutes = newMinutes;
         local.sendCC(1, 69, 48+Math.round(Math.floor(minutes%10)));
         local.sendCC(1, 70, 48+Math.round(Math.floor(minutes/10)));
     }
 
-    if (seconds != newSeconds) {
+    if (seconds != newSeconds || forceUpdateClock) {
         seconds = newSeconds;
         local.sendCC(1, 67, 48+Math.round(Math.floor(seconds%10)));
         local.sendCC(1, 68, 48+Math.round(Math.floor(seconds/10)));
     }
     
-    if (partSeconds != newPartSeconds) {
+    if (partSeconds != newPartSeconds || forceUpdateClock) {
         partSeconds = newPartSeconds;
         local.sendCC(1, 65, 48+Math.floor((partSeconds%100)/10));
         local.sendCC(1, 66, 48+Math.floor(partSeconds/100));
     }
+    forceUpdateClock = false;
 }
